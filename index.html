@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>逢低买入 | $逢低买入 — Buy the Dip</title>
+  <meta name="description" content="Buy the Dip, ride the bounce! Stack your bags, chase green candles, and let BNB vibes take you to the moon! $逢低买入" />
+  <link rel="icon" href="logo.jpg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@500;700;900&family=Orbitron:wght@600;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bnb: "#F0B90B",
+            "bnb-dark": "#C99400",
+            "bnb-glow": "#FFE566",
+            navy: "#050B18",
+            "navy-card": "#0A1628",
+            "navy-mid": "#0D1B33",
+            ink: "#06101C",
+            candle: "#0ECB81",
+            wick: "#F6465D",
+            mist: "#C9D4E8",
+          },
+          fontFamily: {
+            orbit: ["Orbitron", "sans-serif"],
+            hud: ["Chakra Petch", "sans-serif"],
+            sc: ["Noto Sans SC", "sans-serif"],
+            sans: ["Inter", "Noto Sans SC", "sans-serif"],
+          },
+          boxShadow: {
+            gold: "0 0 40px rgba(240,185,11,0.35)",
+            "gold-sm": "0 0 18px rgba(240,185,11,0.45)",
+            candle: "0 0 24px rgba(14,203,129,0.35)",
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    :root {
+      --gold: #f0b90b;
+      --navy: #050b18;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      background: #050b18;
+      color: #f5f7fb;
+    }
+    .chart-grid {
+      background-image:
+        linear-gradient(rgba(240, 185, 11, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(240, 185, 11, 0.06) 1px, transparent 1px);
+      background-size: 48px 48px;
+    }
+    #chart-bg {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .hud-frame {
+      position: relative;
+    }
+    .hud-frame::before,
+    .hud-frame::after {
+      content: "";
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border: 2px solid #f0b90b;
+      pointer-events: none;
+    }
+    .hud-frame::before {
+      top: -2px;
+      left: -2px;
+      border-right: 0;
+      border-bottom: 0;
+    }
+    .hud-frame::after {
+      top: -2px;
+      right: -2px;
+      border-left: 0;
+      border-bottom: 0;
+    }
+    .hud-corners {
+      position: relative;
+    }
+    .hud-corners .c-bl,
+    .hud-corners .c-br {
+      position: absolute;
+      width: 28px;
+      height: 28px;
+      border: 2px solid #f0b90b;
+      pointer-events: none;
+    }
+    .hud-corners .c-bl {
+      bottom: -2px;
+      left: -2px;
+      border-right: 0;
+      border-top: 0;
+    }
+    .hud-corners .c-br {
+      bottom: -2px;
+      right: -2px;
+      border-left: 0;
+      border-top: 0;
+    }
+    .glass {
+      background: linear-gradient(180deg, rgba(10, 22, 40, 0.82), rgba(5, 11, 24, 0.9));
+      border: 1px solid rgba(240, 185, 11, 0.28);
+      backdrop-filter: blur(16px);
+    }
+    .ticker-track {
+      animation: ticker 28s linear infinite;
+    }
+    @keyframes ticker {
+      from { transform: translateX(0); }
+      to { transform: translateX(-50%); }
+    }
+    @keyframes pulse-gold {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(240, 185, 11, 0.55); }
+      70% { box-shadow: 0 0 0 14px rgba(240, 185, 11, 0); }
+    }
+    .buy-pulse { animation: pulse-gold 2.2s ease-out infinite; }
+    @keyframes arrow-bounce {
+      0%, 100% { transform: translateY(0) rotate(-8deg); }
+      50% { transform: translateY(-8px) rotate(-8deg); }
+    }
+    .arrow-float { animation: arrow-bounce 2.6s ease-in-out infinite; }
+    @keyframes scan {
+      0% { transform: translateY(-100%); opacity: 0; }
+      20% { opacity: 0.35; }
+      100% { transform: translateY(100vh); opacity: 0; }
+    }
+    .scanline {
+      position: fixed;
+      left: 0;
+      right: 0;
+      height: 120px;
+      z-index: 1;
+      pointer-events: none;
+      background: linear-gradient(180deg, transparent, rgba(240, 185, 11, 0.07), transparent);
+      animation: scan 9s linear infinite;
+    }
+    @keyframes candle-up {
+      0% { transform: scaleY(0.4); opacity: 0.4; }
+      100% { transform: scaleY(1); opacity: 1; }
+    }
+    .step-num {
+      background: linear-gradient(180deg, #ffe566, #f0b90b 55%, #c99400);
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+    }
+    .gold-text {
+      background: linear-gradient(90deg, #fff4b0, #f0b90b, #ffe566, #f0b90b);
+      background-size: 220% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: shine 5s linear infinite;
+    }
+    @keyframes shine {
+      to { background-position: 220% center; }
+    }
+    .ca-box {
+      font-variant-ligatures: none;
+      letter-spacing: 0.04em;
+    }
+    iframe.dex {
+      width: 100%;
+      height: 640px;
+      border: 0;
+      border-radius: 16px;
+    }
+    @media (max-width: 768px) {
+      iframe.dex { height: 480px; }
+    }
+    .vignette {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(240, 185, 11, 0.12), transparent 42%),
+        radial-gradient(ellipse at 80% 80%, rgba(14, 203, 129, 0.08), transparent 40%),
+        radial-gradient(ellipse at 10% 90%, rgba(246, 70, 93, 0.08), transparent 36%),
+        linear-gradient(180deg, rgba(5, 11, 24, 0.2), rgba(5, 11, 24, 0.75));
+    }
+    .price-up { color: #0ecb81; }
+    .nav-blur {
+      background: rgba(5, 11, 24, 0.72);
+      backdrop-filter: blur(18px);
+      border-bottom: 1px solid rgba(240, 185, 11, 0.18);
+    }
+  </style>
+</head>
+<body class="font-sans antialiased overflow-x-hidden">
+  <canvas id="chart-bg"></canvas>
+  <div class="vignette"></div>
+  <div class="scanline"></div>
+
+  <nav class="fixed top-0 inset-x-0 z-50 nav-blur">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 h-[72px] flex items-center justify-between gap-3">
+      <a href="#top" class="flex items-center gap-3 min-w-0">
+        <img src="logo.jpg" alt="逢低买入 logo" class="w-11 h-11 rounded-xl ring-2 ring-bnb shadow-gold-sm object-cover" />
+        <div class="min-w-0">
+          <p class="font-sc font-black text-lg leading-none text-white truncate">逢低买入</p>
+          <p class="font-hud text-[11px] tracking-[0.22em] text-bnb uppercase">$逢低买入 · BNB</p>
+        </div>
+      </a>
+      <div class="hidden md:flex items-center gap-8 font-hud text-sm tracking-widest uppercase text-mist">
+        <a href="#how" class="hover:text-bnb transition">How to Buy</a>
+        <a href="#chart" class="hover:text-bnb transition">Chart</a>
+      </div>
+      <div class="flex items-center gap-2 sm:gap-3">
+        <a href="https://x.com/buythedipcz" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-lg overflow-hidden ring-1 ring-white/20 hover:ring-bnb transition" aria-label="Twitter / X">
+          <img src="x.png" alt="X" class="w-full h-full object-cover" />
+        </a>
+        <a href="https://dexscreener.com/bsc/TBA" target="_blank" rel="noopener noreferrer" class="hidden sm:inline-flex items-center gap-2 px-4 h-10 rounded-lg border border-bnb/40 text-bnb font-hud text-xs tracking-widest uppercase hover:bg-bnb hover:text-navy transition">
+          Chart
+        </a>
+        <a href="https://flap.sh/bnb/TBA" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-4 sm:px-5 h-10 rounded-lg bg-bnb text-navy font-hud font-bold text-xs tracking-widest uppercase hover:bg-bnb-glow transition buy-pulse">
+          Buy Now
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="top" class="relative z-10">
+    <section class="relative pt-28 sm:pt-32 pb-16 min-h-screen flex items-center">
+      <div class="absolute inset-0 chart-grid opacity-40 pointer-events-none"></div>
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 w-full">
+        <div class="relative hud-frame hud-corners rounded-2xl overflow-hidden shadow-gold mb-8">
+          <img src="banner.jpg" alt="逢低买入 banner" class="w-full h-[220px] sm:h-[320px] lg:h-[380px] object-cover" />
+          <div class="absolute inset-0 bg-gradient-to-t from-navy via-navy/20 to-transparent"></div>
+          <div class="absolute bottom-4 left-4 right-4 flex flex-wrap items-end justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <span class="font-hud text-[10px] sm:text-xs tracking-[0.3em] uppercase text-bnb">BNB CHART TERMINAL</span>
+            </div>
+            <div class="flex items-center gap-4 font-hud text-xs">
+              <span class="price-up">▲ GREEN CANDLES</span>
+              <span class="text-wick">▼ DIP ZONE</span>
+            </div>
+          </div>
+          <span class="c-bl"></span>
+          <span class="c-br"></span>
+        </div>
+
+        <div class="grid lg:grid-cols-[1.15fr_0.85fr] gap-8 items-center">
+          <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-bnb/40 bg-navy-card/80 mb-5">
+              <span class="w-2 h-2 rounded-full bg-candle animate-pulse"></span>
+              <span class="font-hud text-[11px] tracking-[0.25em] uppercase text-bnb">Live on BNB Chain</span>
+            </div>
+            <h1 class="font-sc font-black text-5xl sm:text-6xl lg:text-7xl leading-[1.05] mb-3">
+              <span class="gold-text">逢低买入</span>
+            </h1>
+            <p class="font-orbit text-bnb text-lg sm:text-xl tracking-[0.18em] mb-6">$逢低买入</p>
+            <p class="text-mist text-lg sm:text-xl max-w-xl leading-relaxed mb-8">
+              Buy the Dip, ride the bounce! Stack your bags, chase green candles, and let BNB vibes take you to the moon!
+            </p>
+            <div class="flex flex-wrap gap-3 mb-8">
+              <a href="https://flap.sh/bnb/TBA" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 px-7 h-12 rounded-xl bg-bnb text-navy font-hud font-bold tracking-widest uppercase shadow-gold hover:bg-bnb-glow transition">
+                Buy Now
+              </a>
+              <a href="https://dexscreener.com/bsc/TBA" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center gap-2 px-7 h-12 rounded-xl border border-bnb text-bnb font-hud font-bold tracking-widest uppercase hover:bg-bnb/10 transition">
+                Chart
+              </a>
+              <a href="https://x.com/buythedipcz" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center w-12 h-12 rounded-xl overflow-hidden border border-white/15 hover:border-bnb transition" aria-label="Follow on X">
+                <img src="x.png" alt="X" class="w-full h-full object-cover" />
+              </a>
+            </div>
+
+            <div class="glass rounded-xl p-4 sm:p-5 max-w-xl">
+              <div class="flex items-center justify-between gap-3 mb-2">
+                <span class="font-hud text-[11px] tracking-[0.28em] uppercase text-bnb">Contract Address</span>
+                <span class="text-[10px] font-hud tracking-widest text-candle uppercase">Copy available</span>
+              </div>
+              <div class="flex items-stretch gap-2">
+                <code id="ca-text" class="ca-box flex-1 min-w-0 truncate bg-ink/80 border border-bnb/20 rounded-lg px-3 py-3 font-hud text-sm text-white">TBA</code>
+                <button id="copy-ca" type="button" class="shrink-0 px-4 rounded-lg bg-bnb text-navy font-hud font-bold text-xs tracking-widest uppercase hover:bg-bnb-glow transition">
+                  Copy
+                </button>
+              </div>
+              <p id="copy-msg" class="mt-2 text-xs text-candle h-4"></p>
+            </div>
+          </div>
+
+          <div class="relative">
+            <div class="absolute -top-6 -right-4 arrow-float hidden sm:block">
+              <svg width="86" height="86" viewBox="0 0 86 86" fill="none" aria-hidden="true">
+                <path d="M10 56 L32 40 L48 48 L76 16" stroke="#F0B90B" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M52 16 H76 V40" stroke="#F0B90B" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="70" cy="14" r="4" fill="#FFE566"/>
+              </svg>
+            </div>
+            <div class="glass hud-frame hud-corners rounded-2xl p-6 sm:p-7">
+              <div class="flex items-center gap-4 mb-6">
+                <img src="logo.jpg" alt="逢低买入" class="w-16 h-16 rounded-2xl ring-2 ring-bnb object-cover shadow-gold-sm" />
+                <div>
+                  <p class="font-sc font-black text-2xl">逢低买入</p>
+                  <p class="font-hud text-xs tracking-widest text-bnb">PAIR · $逢低买入 / BNB</p>
+                </div>
+              </div>
+              <div class="grid grid-cols-2 gap-3 mb-6">
+                <div class="rounded-xl bg-ink/70 border border-candle/30 p-4">
+                  <p class="font-hud text-[10px] tracking-widest text-mist uppercase mb-1">Dip Power</p>
+                  <p class="font-orbit text-2xl price-up">MAX</p>
+                </div>
+                <div class="rounded-xl bg-ink/70 border border-bnb/30 p-4">
+                  <p class="font-hud text-[10px] tracking-widest text-mist uppercase mb-1">Bounce</p>
+                  <p class="font-orbit text-2xl text-bnb" id="bounce-val">+88.8%</p>
+                </div>
+                <div class="rounded-xl bg-ink/70 border border-white/10 p-4">
+                  <p class="font-hud text-[10px] tracking-widest text-mist uppercase mb-1">Bags</p>
+                  <p class="font-orbit text-2xl text-white">∞</p>
+                </div>
+                <div class="rounded-xl bg-ink/70 border border-white/10 p-4">
+                  <p class="font-hud text-[10px] tracking-widest text-mist uppercase mb-1">Destination</p>
+                  <p class="font-orbit text-xl text-bnb-glow">MOON</p>
+                </div>
+              </div>
+              <p class="text-sm text-mist leading-relaxed">
+                Every red candle is a gift. Every dip is a doorway. Stack $逢低买入 on BNB, chase the green, and let the bounce do the talking.
+              </p>
+              <span class="c-bl"></span>
+              <span class="c-br"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="relative z-10 border-y border-bnb/20 bg-navy-card/80 overflow-hidden">
+      <div class="ticker-track flex whitespace-nowrap py-3 font-hud text-sm tracking-[0.28em] uppercase text-bnb">
+        <span class="px-8">Buy the Dip</span><span class="text-candle">●</span>
+        <span class="px-8">Ride the Bounce</span><span class="text-white/30">●</span>
+        <span class="px-8">Stack your bags</span><span class="text-candle">●</span>
+        <span class="px-8">Chase green candles</span><span class="text-white/30">●</span>
+        <span class="px-8">BNB vibes to the moon</span><span class="text-candle">●</span>
+        <span class="px-8">$逢低买入</span><span class="text-white/30">●</span>
+        <span class="px-8">Buy the Dip</span><span class="text-candle">●</span>
+        <span class="px-8">Ride the Bounce</span><span class="text-white/30">●</span>
+        <span class="px-8">Stack your bags</span><span class="text-candle">●</span>
+        <span class="px-8">Chase green candles</span><span class="text-white/30">●</span>
+        <span class="px-8">BNB vibes to the moon</span><span class="text-candle">●</span>
+        <span class="px-8">$逢低买入</span>
+      </div>
+    </div>
+
+    <section id="how" class="relative py-20 sm:py-28">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6">
+        <div class="text-center mb-12">
+          <p class="font-hud text-xs tracking-[0.4em] uppercase text-bnb mb-3">Entry Protocol</p>
+          <h2 class="font-sc font-black text-4xl sm:text-5xl gold-text">How to Buy</h2>
+          <p class="mt-4 text-mist max-w-2xl mx-auto">
+            Four candles. One mission. Buy $逢低买入 with BNB, stack your bags, and ride the bounce.
+          </p>
+        </div>
+
+        <div class="grid sm:grid-cols-2 xl:grid-cols-4 gap-5">
+          <article class="glass hud-frame hud-corners rounded-2xl p-6 hover:border-bnb/60 transition">
+            <p class="font-orbit text-5xl step-num mb-4">01</p>
+            <div class="h-1 w-12 bg-bnb mb-5"></div>
+            <h3 class="font-hud text-lg tracking-wide text-white mb-3">Grab a Wallet</h3>
+            <p class="text-sm text-mist leading-relaxed">
+              Install MetaMask or Trust Wallet. Add BNB Smart Chain. This is your launchpad to chase green candles with $逢低买入.
+            </p>
+            <span class="c-bl"></span><span class="c-br"></span>
+          </article>
+          <article class="glass hud-frame hud-corners rounded-2xl p-6 hover:border-bnb/60 transition">
+            <p class="font-orbit text-5xl step-num mb-4">02</p>
+            <div class="h-1 w-12 bg-candle mb-5"></div>
+            <h3 class="font-hud text-lg tracking-wide text-white mb-3">Load BNB</h3>
+            <p class="text-sm text-mist leading-relaxed">
+              Buy BNB on Binance, then send it to your wallet. BNB is the fuel. No BNB, no bounce, no moon.
+            </p>
+            <span class="c-bl"></span><span class="c-br"></span>
+          </article>
+          <article class="glass hud-frame hud-corners rounded-2xl p-6 hover:border-bnb/60 transition">
+            <p class="font-orbit text-5xl step-num mb-4">03</p>
+            <div class="h-1 w-12 bg-bnb mb-5"></div>
+            <h3 class="font-hud text-lg tracking-wide text-white mb-3">Open Flap.sh</h3>
+            <p class="text-sm text-mist leading-relaxed">
+              Hit <span class="text-bnb">Buy Now</span>, connect your wallet, and paste the $逢低买入 contract. Copy CA from above — TBA until launch locks in.
+            </p>
+            <span class="c-bl"></span><span class="c-br"></span>
+          </article>
+          <article class="glass hud-frame hud-corners rounded-2xl p-6 hover:border-bnb/60 transition">
+            <p class="font-orbit text-5xl step-num mb-4">04</p>
+            <div class="h-1 w-12 bg-candle mb-5"></div>
+            <h3 class="font-hud text-lg tracking-wide text-white mb-3">Swap &amp; Stack</h3>
+            <p class="text-sm text-mist leading-relaxed">
+              Swap BNB for $逢低买入. Buy the dip, ride the bounce, stack your bags, and let BNB vibes take you to the moon.
+            </p>
+            <span class="c-bl"></span><span class="c-br"></span>
+          </article>
+        </div>
+
+        <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
+          <a href="https://flap.sh/bnb/TBA" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-8 h-12 rounded-xl bg-bnb text-navy font-hud font-bold tracking-widest uppercase shadow-gold hover:bg-bnb-glow transition">
+            Buy $逢低买入 Now
+          </a>
+          <a href="https://dexscreener.com/bsc/TBA" target="_blank" rel="noopener noreferrer" class="inline-flex items-center px-8 h-12 rounded-xl border border-bnb text-bnb font-hud font-bold tracking-widest uppercase hover:bg-bnb/10 transition">
+            Open Chart
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="chart" class="relative pb-24">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6">
+        <div class="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+          <div>
+            <p class="font-hud text-xs tracking-[0.4em] uppercase text-bnb mb-3">Market Radar</p>
+            <h2 class="font-sc font-black text-4xl sm:text-5xl">Live Chart</h2>
+            <p class="mt-3 text-mist max-w-xl">Watch the dip, time the bounce, chase the green candles. Dexscreener embed for $逢低买入 on BNB.</p>
+          </div>
+          <a href="https://dexscreener.com/bsc/TBA" target="_blank" rel="noopener noreferrer" class="inline-flex items-center justify-center px-5 h-11 rounded-lg border border-bnb/50 text-bnb font-hud text-xs tracking-widest uppercase hover:bg-bnb hover:text-navy transition">
+            Open Dexscreener
+          </a>
+        </div>
+        <div class="glass hud-frame hud-corners rounded-2xl p-2 sm:p-3 overflow-hidden">
+          <iframe
+            class="dex"
+            title="Dexscreener chart for 逢低买入"
+            src="https://dexscreener.com/bsc/TBA?embed=1&loadChartSettings=0&trades=0&tabs=0&info=0&chartLeftToolbar=0&chartTheme=dark&theme=dark&chartStyle=1&chartType=usd&interval=15"
+          ></iframe>
+          <span class="c-bl"></span><span class="c-br"></span>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="relative z-10 border-t border-bnb/20 bg-navy/90">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
+      <div class="flex items-center gap-3">
+        <img src="logo.jpg" alt="" class="w-10 h-10 rounded-lg ring-1 ring-bnb object-cover" />
+        <div>
+          <p class="font-sc font-bold">逢低买入 · $逢低买入</p>
+          <p class="text-xs text-mist">Buy the Dip, ride the bounce.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="https://x.com/buythedipcz" target="_blank" rel="noopener noreferrer" class="w-10 h-10 rounded-lg overflow-hidden ring-1 ring-white/20 hover:ring-bnb transition">
+          <img src="x.png" alt="X" class="w-full h-full object-cover" />
+        </a>
+        <a href="https://flap.sh/bnb/TBA" target="_blank" rel="noopener noreferrer" class="px-4 h-10 inline-flex items-center rounded-lg bg-bnb text-navy font-hud text-xs font-bold tracking-widest uppercase">Buy Now</a>
+        <a href="https://dexscreener.com/bsc/TBA" target="_blank" rel="noopener noreferrer" class="px-4 h-10 inline-flex items-center rounded-lg border border-bnb text-bnb font-hud text-xs font-bold tracking-widest uppercase">Chart</a>
+      </div>
+    </div>
+    <p class="text-center text-[11px] text-white/40 pb-8 px-4">
+      $逢低买入 is a meme token on BNB. Not financial advice. DYOR. Stack bags at your own risk. To the moon, not to the courts.
+    </p>
+  </footer>
+
+  <script>
+    const CA = "TBA";
+    const copyBtn = document.getElementById("copy-ca");
+    const copyMsg = document.getElementById("copy-msg");
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(CA);
+        copyMsg.textContent = "CA copied. Go buy the dip.";
+        copyBtn.textContent = "Copied";
+      } catch {
+        const range = document.createRange();
+        range.selectNodeContents(document.getElementById("ca-text"));
+        const sel = window.getSelection();
+        sel.removeAllRanges();
+        sel.addRange(range);
+        copyMsg.textContent = "Select and copy the CA.";
+      }
+      setTimeout(() => {
+        copyBtn.textContent = "Copy";
+        copyMsg.textContent = "";
+      }, 2200);
+    });
+
+    const bounceEl = document.getElementById("bounce-val");
+    setInterval(() => {
+      const n = (80 + Math.random() * 28).toFixed(1);
+      bounceEl.textContent = "+" + n + "%";
+    }, 1800);
+
+    const canvas = document.getElementById("chart-bg");
+    const ctx = canvas.getContext("2d");
+    let candles = [];
+    let w = 0, h = 0, dpr = 1;
+
+    function resize() {
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = window.innerWidth;
+      h = window.innerHeight;
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+      canvas.style.width = w + "px";
+      canvas.style.height = h + "px";
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      seedCandles();
+    }
+
+    function seedCandles() {
+      const count = Math.max(28, Math.floor(w / 28));
+      candles = [];
+      let price = 0.52;
+      for (let i = 0; i < count; i++) {
+        const dip = Math.sin(i / 4.2) * 0.08;
+        const change = (Math.random() - 0.42) * 0.07 + dip * 0.15;
+        const open = price;
+        const close = Math.min(0.92, Math.max(0.12, open + change));
+        const high = Math.max(open, close) + Math.random() * 0.04;
+        const low = Math.min(open, close) - Math.random() * 0.04;
+        candles.push({ open, close, high, low, vol: 0.25 + Math.random() * 0.75 });
+        price = close;
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, w, h);
+      const g = ctx.createLinearGradient(0, 0, 0, h);
+      g.addColorStop(0, "#071226");
+      g.addColorStop(0.55, "#050b18");
+      g.addColorStop(1, "#03060d");
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = "rgba(240,185,11,0.06)";
+      ctx.lineWidth = 1;
+      const gap = 56;
+      for (let x = 0; x < w; x += gap) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, h);
+        ctx.stroke();
+      }
+      for (let y = 0; y < h; y += gap) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(w, y);
+        ctx.stroke();
+      }
+
+      const padX = 20;
+      const chartH = h * 0.78;
+      const baseY = h * 0.08;
+      const volH = h * 0.12;
+      const slot = (w - padX * 2) / candles.length;
+
+      ctx.beginPath();
+      candles.forEach((c, i) => {
+        const x = padX + i * slot + slot / 2;
+        const y = baseY + (1 - c.close) * chartH;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      });
+      ctx.strokeStyle = "rgba(240,185,11,0.55)";
+      ctx.lineWidth = 2.2;
+      ctx.stroke();
+
+      const last = candles[candles.length - 1];
+      const lastX = padX + (candles.length - 1) * slot + slot / 2;
+      const lastY = baseY + (1 - last.close) * chartH;
+      ctx.fillStyle = "#f0b90b";
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 4, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "rgba(240,185,11,0.12)";
+      ctx.beginPath();
+      ctx.arc(lastX, lastY, 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      candles.forEach((c, i) => {
+        const x = padX + i * slot + slot / 2;
+        const bodyW = Math.max(6, slot * 0.46);
+        const yOpen = baseY + (1 - c.open) * chartH;
+        const yClose = baseY + (1 - c.close) * chartH;
+        const yHigh = baseY + (1 - c.high) * chartH;
+        const yLow = baseY + (1 - c.low) * chartH;
+        const up = c.close >= c.open;
+        ctx.strokeStyle = up ? "#0ecb81" : "#f6465d";
+        ctx.fillStyle = up ? "rgba(14,203,129,0.85)" : "rgba(246,70,93,0.78)";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(x, yHigh);
+        ctx.lineTo(x, yLow);
+        ctx.stroke();
+        const top = Math.min(yOpen, yClose);
+        const bh = Math.max(3, Math.abs(yClose - yOpen));
+        ctx.fillRect(x - bodyW / 2, top, bodyW, bh);
+
+        const vh = c.vol * volH;
+        ctx.fillStyle = up ? "rgba(14,203,129,0.22)" : "rgba(246,70,93,0.18)";
+        ctx.fillRect(x - bodyW / 2, h - 18 - vh, bodyW, vh);
+      });
+
+      requestAnimationFrame(tick);
+    }
+
+    let t = 0;
+    function tick() {
+      t += 1;
+      if (t % 18 === 0) {
+        const last = candles[candles.length - 1];
+        const change = (Math.random() - 0.38) * 0.045;
+        const open = last.close;
+        const close = Math.min(0.93, Math.max(0.12, open + change));
+        candles.push({
+          open,
+          close,
+          high: Math.max(open, close) + Math.random() * 0.03,
+          low: Math.min(open, close) - Math.random() * 0.03,
+          vol: 0.25 + Math.random() * 0.75,
+        });
+        if (candles.length > Math.max(28, Math.floor(w / 28))) candles.shift();
+      }
+      draw();
+    }
+
+    window.addEventListener("resize", resize);
+    resize();
+  </script>
+</body>
+</html>
